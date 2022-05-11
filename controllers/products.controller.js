@@ -1,37 +1,49 @@
-const { ProductsApi } = require('../models/indexApi')
+const { ProductsDao } = require('../models/daos/indexApi')
+    //const ProductsDao = require('../models/daos/products/ProductsDaoMongoDB')
 
-const productsApi = new ProductsApi()
+const productsApi = new ProductsDao()
 
-
-const getAllProducts = (req, res) => {
-    return res.json(productsApi.getAll())
+const getAllProducts = async(req, res) => {
+    const allProducts = await productsApi.getAll()
+    return res.json(allProducts)
 };
-
-const getProductById = (req, res) => {
+const getProductById = async(req, res) => {
     const { productId } = req.params
-    const searchedProduct = productsApi.getById(productId)
-    return res.json({ result: searchedProduct });
+    const searchedProduct = await productsApi.getById(productId)
+    return res.json(searchedProduct);
 };
-
-const saveNewProduct = (req, res) => {
-    const newProduct = productsApi.saveNew(req.body)
-    return res.json({ Nuevo: newProduct })
+const saveNewProduct = async(req, res) => {
+    const idCount = await productsApi.getAll()
+    const { name, desc, image, price, stock } = req.body;
+    if (!name || !desc || !image || !price || !stock) return { error: 'Todos los campos son obligatorios!' };
+    const newProduct = {
+        id: idCount.length + 1,
+        code: idCount.length + 1,
+        timestamp: Date.now(),
+        name,
+        desc,
+        image,
+        price,
+        stock
+    };
+    productsApi.save(newProduct)
+    return res.json({ response: `Se agregó el nuevo Producto: ${newProduct.id}` })
 };
-
 const updateProduct = (req, res) => {
     const { productId } = req.params
-    const { name, desc, price, image } = req.body
-    const newProduct = { name, desc, price, image }
+    const { name, desc, price, image, stock } = req.body
+    const newProduct = { name, desc, price, image, stock }
 
-    if (!name || !desc || !image || !price) return { error: 'Todos los campos son obligatorios!' };
-    const updatedProduct = productsApi.updateById(newProduct, productId)
-    return res.json({ Nuevo: updatedProduct.name })
+    if (!name || !desc || !image || !price || !stock) return res.json({ error: 'Todos los campos son obligatorios!' });
+
+    const updatedProduct = productsApi.updateById(productId, newProduct)
+    return res.json({ response: `Se actualizó el Producto: ${productId}` })
 }
 const deleteProduct = (req, res) => {
     const { productId } = req.params
     const deletedProduct = productsApi.deleteById(productId)
     if (deletedProduct.error) return res.status(404).send(deletedProduct.error);
-    return res.json({ Eliminado: deletedProduct });
+    return res.json({ response: `Se eliminó el Producto: ${productId}` });
 };
 
 module.exports = {
